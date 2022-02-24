@@ -5,6 +5,7 @@ using System.Text;
 namespace Password_Manager
 {
     class InputManager
-    {
+    {      
+        
     }
 }
