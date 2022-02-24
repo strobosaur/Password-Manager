@@ -9,17 +9,19 @@ namespace Password_Manager
     {
         static void Main(string[] args)
         {
+            string[] args2 = {"init", "client.json", "server.json"};
             PasswordManager manager;
 
-            bool run = true;
-            string[] input;
+            // bool run = true;
+            manager = new PasswordManager(args2);
+            manager.HandleInput();
 
             // MAIN LOOP
-            do {
-                input = MainMenu();
-                manager = new PasswordManager(input);
-                run = (input[0] != "exit");
-            } while (run);
+            // do {
+                // input = MainMenu();
+                // manager = new PasswordManager(input);
+                // run = (input[0] != "exit");
+            // } while (run);
         }
 
         // FUNTION MAIN MENU

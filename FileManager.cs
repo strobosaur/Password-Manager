@@ -10,15 +10,19 @@ namespace Password_Manager
         string pathClient = @"client.txt";
         string pathServer = @"server.txt";
 
-        void WriteFile(string input, string path)
+        public void WriteFile(string path, string input = "", bool overwrite = true)
         {
             if (!File.Exists(path))
+            {
+                File.WriteAllText(path, input);
+            } 
+            else if (overwrite) 
             {
                 File.WriteAllText(path, input);
             }
         }
 
-        string ReadFile(string path)
+        public string ReadFile(string path)
         {
             string result = "";
 
