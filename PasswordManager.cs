@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Security.Cryptography;
 
 namespace Password_Manager
@@ -8,9 +9,10 @@ namespace Password_Manager
     class PasswordManager
     {
         string[] input;
-        string initializationVector;
+
         InputManager inputManager;
         FileManager fileManager;
+
         private RandomNumberGenerator rng;
         private Rfc2898DeriveBytes rfc;
         private Aes aes;
@@ -18,16 +20,22 @@ namespace Password_Manager
         public PasswordManager(string[] args)
         {
             input = args;
-            InputManager inputManager = new InputManager();
-            FileManager fileManager = new FileManager();
+            inputManager = new InputManager();
+            fileManager = new FileManager();
+            rng = RandomNumberGenerator.Create();
+            aes = new AesCryptoServiceProvider();
         }
 
         public void HandleInput()
         {
-            switch (input[0])
+            switch (input[0].ToLower())
             {
                 case "init":
                 cmdInit(input);
+                break;
+
+                case "create":
+                cmdCreate(input);
                 break;
 
                 case "get":
@@ -43,19 +51,55 @@ namespace Password_Manager
                 break;
 
                 case "secret":
-                cmdDelete(input);
+                cmdSecret(input);
                 break;
 
                 default:
                 Console.WriteLine("Invalid input");
                 break;
-            }
-            
+            }            
         }
 
+        // FUNCTION COMMAND INIT 
         private void cmdInit(string[] command)
         {
+            Dictionary<string, string> clientDict = new Dictionary<string, string>();
+            Dictionary<string, string> serverDict = new Dictionary<string, string>();
+            string masterPwd = "";
+            string clientOutput;
+            string serverOutput;
 
+            // INITIALIZATION VECTOR
+            aes.GenerateIV();
+            int iv = BitConverter.ToInt32(aes.IV);
+
+            // SECRET KEY
+            byte[] bytes = new byte[4];
+            rng.GetBytes(bytes);
+            int secretKey = BitConverter.ToInt32(bytes, 0);
+            
+            do {
+                System.Console.Write("Please input your master password (minimum 8 characters): ");
+                masterPwd = Console.ReadLine();
+                if (masterPwd.Length < 8) {
+                    Console.WriteLine("Password too short...");
+                }
+            } while (masterPwd.Length < 8);
+
+            // CREATE CLIENT OUTPUT OBJECT
+            clientDict.Add("masterPwd", masterPwd);
+            clientDict.Add("iv", Convert.ToString(iv));
+            clientOutput = JsonSerializer.Serialize(clientDict);
+
+            // CREATE SERVER OUTPUT OBJECT
+            serverDict.Add("SecretKey", Convert.ToString(secretKey));
+            serverOutput = JsonSerializer.Serialize(serverDict);
+
+            // CREATE CLIENT VAULT FILE
+            fileManager.WriteFile(command[1], clientOutput);
+
+            // CREATE SERVER VAULT FILE
+            fileManager.WriteFile(command[2], serverOutput);
         }
 
         private void cmdCreate(string[] command)
