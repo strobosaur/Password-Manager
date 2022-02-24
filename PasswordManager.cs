@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.IO;
 
 namespace Password_Manager
 {
@@ -23,7 +24,8 @@ namespace Password_Manager
             inputManager = new InputManager();
             fileManager = new FileManager();
             rng = RandomNumberGenerator.Create();
-            aes = new AesCryptoServiceProvider();
+            // aes = new AesCryptoServiceProvider();
+            aes = Aes.Create();
         }
 
         public void HandleInput()
@@ -65,34 +67,36 @@ namespace Password_Manager
         {
             Dictionary<string, string> clientDict = new Dictionary<string, string>();
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
+
             string masterPwd = "";
             string clientOutput;
             string serverOutput;
 
             // INITIALIZATION VECTOR
             aes.GenerateIV();
-            int iv = BitConverter.ToInt32(aes.IV);
+            string iv = System.Convert.ToBase64String(aes.IV);
 
             // SECRET KEY
-            byte[] bytes = new byte[4];
+            byte[] bytes = new byte[32];
             rng.GetBytes(bytes);
-            int secretKey = BitConverter.ToInt32(bytes, 0);
+            string secretKey = System.Convert.ToBase64String(bytes);
             
             do {
                 System.Console.Write("Please input your master password (minimum 8 characters): ");
-                masterPwd = Console.ReadLine();
-                if (masterPwd.Length < 8) {
-                    Console.WriteLine("Password too short...");
-                }
+                masterPwd = "12345678";
+                // masterPwd = Console.ReadLine();
+                // if (masterPwd.Length < 8) {
+                //     Console.WriteLine("Password too short...");
+                // }
             } while (masterPwd.Length < 8);
 
             // CREATE CLIENT OUTPUT OBJECT
             clientDict.Add("masterPwd", masterPwd);
-            clientDict.Add("iv", Convert.ToString(iv));
+            clientDict.Add("iv", iv);
             clientOutput = JsonSerializer.Serialize(clientDict);
 
             // CREATE SERVER OUTPUT OBJECT
-            serverDict.Add("SecretKey", Convert.ToString(secretKey));
+            serverDict.Add("SecretKey", secretKey);
             serverOutput = JsonSerializer.Serialize(serverDict);
 
             // CREATE CLIENT VAULT FILE
@@ -125,6 +129,16 @@ namespace Password_Manager
         private void cmdSecret(string[] command)
         {
             
+        }
+        
+        public static string Base64Encode(string plainText) {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        public static string Base64Decode(string base64EncodedData) {
+            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
     }
 }
