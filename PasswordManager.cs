@@ -24,10 +24,10 @@ namespace Password_Manager
             inputManager = new InputManager();
             fileManager = new FileManager();
             rng = RandomNumberGenerator.Create();
-            // aes = new AesCryptoServiceProvider();
             aes = Aes.Create();
         }
 
+        // FUNCTION HANDLE INPUT
         public void HandleInput()
         {
             switch (input[0].ToLower())
@@ -65,22 +65,24 @@ namespace Password_Manager
         // FUNCTION COMMAND INIT 
         private void cmdInit(string[] command)
         {
-            Dictionary<string, string> clientDict = new Dictionary<string, string>();
-            Dictionary<string, string> serverDict = new Dictionary<string, string>();
-
-            string masterPwd = "";
+            string masterPwd;
             string clientOutput;
             string serverOutput;
+            byte[] skBytes;
+
+            Dictionary<string, string> clientDict = new Dictionary<string, string>();
+            Dictionary<string, string> serverDict = new Dictionary<string, string>();
 
             // INITIALIZATION VECTOR
             aes.GenerateIV();
             string iv = System.Convert.ToBase64String(aes.IV);
 
             // SECRET KEY
-            byte[] bytes = new byte[32];
-            rng.GetBytes(bytes);
-            string secretKey = System.Convert.ToBase64String(bytes);
+            skBytes = new byte[32];
+            rng.GetBytes(skBytes);
+            string secretKey = System.Convert.ToBase64String(skBytes);
             
+            // GET USER PASSWORD INPUT
             do {
                 System.Console.Write("Please input your master password (minimum 8 characters): ");
                 masterPwd = "12345678";
@@ -91,8 +93,8 @@ namespace Password_Manager
             } while (masterPwd.Length < 8);
 
             // CREATE CLIENT OUTPUT OBJECT
-            clientDict.Add("masterPwd", masterPwd);
-            clientDict.Add("iv", iv);
+            clientDict.Add("MasterPwd", masterPwd);
+            clientDict.Add("IV", iv);
             clientOutput = JsonSerializer.Serialize(clientDict);
 
             // CREATE SERVER OUTPUT OBJECT
@@ -106,36 +108,43 @@ namespace Password_Manager
             fileManager.WriteFile(command[2], serverOutput);
         }
 
+        // FUNCTION COMMAND CREATE 
         private void cmdCreate(string[] command)
         {
             
         }
 
+        // FUNCTION COMMAND GET 
         private void cmdGet(string[] command)
         {
             
         }
 
+        // FUNCTION COMMAND SET 
         private void cmdSet(string[] command)
         {
             
         }
 
+        // FUNCTION COMMAND DELETE 
         private void cmdDelete(string[] command)
         {
             
         }
 
+        // FUNCTION COMMAND SECRET 
         private void cmdSecret(string[] command)
         {
             
         }
         
+        // FUNCTION BASE64 ENCODE
         public static string Base64Encode(string plainText) {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
         }
 
+        // FUNCTION BASE64 DECODE
         public static string Base64Decode(string base64EncodedData) {
             var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
             return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
