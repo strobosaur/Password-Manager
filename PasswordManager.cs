@@ -79,26 +79,26 @@ namespace Password_Manager
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
             Dictionary<string, string> vaultDict = new Dictionary<string, string>();
             
-            System.Console.WriteLine("Running INIT command\n");
+            Console.WriteLine("Running INIT command\n");
 
             // GET USER PASSWORD INPUT
             do {
-                System.Console.Write("Please input your master password (minimum 8 characters): ");
+                Console.Write("Please input your master password (minimum 8 characters): ");
                 masterPwd = "12345678";
                 // masterPwd = Console.ReadLine();
                 // if (masterPwd.Length < 8) {
                 //     Console.WriteLine("Password too short...");
                 // }
-                System.Console.WriteLine();
+                Console.WriteLine();
             } while (masterPwd.Length < 8);
 
             // SECRET KEY
             skBytes = new byte[16];
             rng.GetBytes(skBytes);
-            secretKey = System.Convert.ToBase64String(skBytes);
+            secretKey = Convert.ToBase64String(skBytes);
 
             // PRINT SECRET KEY TO CONSOLE
-            System.Console.WriteLine("Your generated Secret Key is:\n\n" + secretKey + "\n");
+            Console.WriteLine("Your generated Secret Key is:\n\n" + secretKey + "\n");
 
             // CREATE VAULT KEY
             key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
@@ -108,14 +108,14 @@ namespace Password_Manager
             {
                 // INITIALIZATION VECTOR
                 aesAlg.GenerateIV();
-                iv = System.Convert.ToBase64String(aesAlg.IV);
+                iv = Convert.ToBase64String(aesAlg.IV);
 
                 // AES KEY
                 aesAlg.Key = key1.GetBytes(32);
 
                 // ENCRYPT VAULT
                 string emptyVault = JsonSerializer.Serialize(vaultDict);
-                vaultOutput = System.Convert.ToBase64String(EncryptStringToBytes_Aes(emptyVault, aesAlg.Key, aesAlg.IV));
+                vaultOutput = Convert.ToBase64String(EncryptStringToBytes_Aes(emptyVault, aesAlg.Key, aesAlg.IV));
             }            
 
             // CREATE CLIENT OUTPUT OBJECT
@@ -147,6 +147,7 @@ namespace Password_Manager
             string secretKey;
             string clientString;
             string serverString;
+            string vaultString;
 
             byte[] skBytes;
             byte[] ivBytes;
@@ -158,16 +159,16 @@ namespace Password_Manager
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
             
-            System.Console.WriteLine("Running GET command\n");
+            Console.WriteLine("Running GET command\n");
             
             // MASTER PASSWORD PROMPT
-            System.Console.Write("Please input your Master Password: ");
+            Console.Write("Please input your Master Password: ");
             //masterPwd = System.Console.ReadLine();
             masterPwd = "12345678";
-            System.Console.WriteLine();
+            Console.WriteLine();
 
             // SECRET KEY PROMPT
-            System.Console.Write("Please input your Secret Key: ");
+            Console.Write("Please input your Secret Key: ");
             //secretKey = System.Console.ReadLine();
             secretKey = "ke3e3olAxRkxklKBge7H/w==";
 
@@ -180,21 +181,22 @@ namespace Password_Manager
             serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
 
             // GET BYTES FROM BASE64STRINGS
-            skBytes = System.Convert.FromBase64String(secretKey);
-            ivBytes = System.Convert.FromBase64String(serverDict["iv"]);
-            vaultBytes = System.Convert.FromBase64String(serverDict["vault"]);
+            skBytes = Convert.FromBase64String(secretKey);
+            ivBytes = Convert.FromBase64String(serverDict["iv"]);
+            vaultBytes = Convert.FromBase64String(serverDict["vault"]);
 
             // CREATE VAULT KEY
             key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
 
             // ATTEMPT VAULT DECRYPTION
-            //vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
-            vaultDict = AccessServerFile(command[2], masterPwd, secretKey);
+            vaultString = DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes);
+            vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(vaultString);
+            //vaultDict = AccessServerFile(command[2], masterPwd, secretKey);
 
             // PRINT CONTENTS
             foreach (var item in vaultDict)
             {
-                System.Console.WriteLine(item.Key + ": " + item.Value);
+                Console.WriteLine(item.Key + ": " + item.Value);
             }
         }
 
@@ -231,27 +233,15 @@ namespace Password_Manager
             Dictionary<string, string> serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
 
             // GET BYTES FROM BASE64STRINGS
-            byte[] skBytes = System.Convert.FromBase64String(secretKey);
-            byte[] ivBytes = System.Convert.FromBase64String(serverDict["iv"]);
-            byte[] vaultBytes = System.Convert.FromBase64String(serverDict["vault"]);
+            byte[] skBytes = Convert.FromBase64String(secretKey);
+            byte[] ivBytes = Convert.FromBase64String(serverDict["iv"]);
+            byte[] vaultBytes = Convert.FromBase64String(serverDict["vault"]);
 
             // RECREATE VAULT KEY
             Rfc2898DeriveBytes key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
 
             // ATTEMPT VAULT DECRYPTION
             return JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
-        }
-        
-        // FUNCTION BASE64 ENCODE
-        public static string Base64Encode(string plainText) {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            return System.Convert.ToBase64String(plainTextBytes);
-        }
-
-        // FUNCTION BASE64 DECODE
-        public static string Base64Decode(string base64EncodedData) {
-            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
-            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
         // FUNCTION ENCRYPT STRING TO BYTES
