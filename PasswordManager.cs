@@ -15,8 +15,6 @@ namespace Password_Manager
         FileManager fileManager;
 
         private RandomNumberGenerator rng;
-        private Rfc2898DeriveBytes rfc;
-        private Aes aes;
 
         // CONSTRUCTUR 1
         public PasswordManager(string[] args)
@@ -27,7 +25,6 @@ namespace Password_Manager
             fileManager = new FileManager();
 
             rng = RandomNumberGenerator.Create();
-            aes = Aes.Create();
         }
 
         // FUNCTION HANDLE INPUT
@@ -71,6 +68,7 @@ namespace Password_Manager
             string masterPwd;
             string iv;
             string secretKey;
+            string vaultOutput;
             string clientOutput;
             string serverOutput;
             byte[] skBytes;
@@ -79,11 +77,6 @@ namespace Password_Manager
 
             Dictionary<string, string> clientDict = new Dictionary<string, string>();
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
-
-            // SECRET KEY
-            skBytes = new byte[32];
-            rng.GetBytes(skBytes);
-            secretKey = System.Convert.ToBase64String(skBytes);
             
             // GET USER PASSWORD INPUT
             do {
@@ -95,42 +88,37 @@ namespace Password_Manager
                 // }
             } while (masterPwd.Length < 8);
 
+            // SECRET KEY
+            skBytes = new byte[16];
+            rng.GetBytes(skBytes);
+            secretKey = System.Convert.ToBase64String(skBytes);
+
+            // PRINT SECRET KEY TO CONSOLE
+            System.Console.WriteLine("Your generated Secret Key is:\n\n" + secretKey + "\n");
+
             // CREATE VAULT KEY
             key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
 
-            // ENCRYPT VAULT
-            using (aes = Aes.Create())
+            // AES ENCRYPTION
+            using (Aes aesAlg = Aes.Create())
             {
                 // INITIALIZATION VECTOR
-                aes.GenerateIV();
-                iv = System.Convert.ToBase64String(aes.IV);
+                aesAlg.GenerateIV();
+                iv = System.Convert.ToBase64String(aesAlg.IV);
 
                 // AES KEY
-                aes.Key = key1.GetBytes(32);
+                aesAlg.Key = key1.GetBytes(32);
 
-                // ENCRYPTION
-                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-
-                using (MemoryStream msEncrypt = new MemoryStream())
-                {
-                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                    {
-                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                        {
-                            swEncrypt.Write("");
-                        }
-                        byte[] encrypted = msEncrypt.ToArray();
-                        serverOutput = System.Convert.ToBase64String(encrypted);
-                    }
-                }
-            }
+                // ENCRYPT VAULT
+                vaultOutput = System.Convert.ToBase64String(EncryptStringToBytes_Aes("vault", aesAlg.Key, aesAlg.IV));
+            }            
 
             // CREATE CLIENT OUTPUT OBJECT
             clientDict.Add("secret", secretKey);
             clientOutput = JsonSerializer.Serialize(clientDict);
 
             // CREATE SERVER OUTPUT OBJECT
-            serverDict.Add("vault", serverOutput);
+            serverDict.Add("vault", vaultOutput);
             serverDict.Add("iv", iv);
             serverOutput = JsonSerializer.Serialize(serverDict);
 
