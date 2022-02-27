@@ -77,7 +77,10 @@ namespace Password_Manager
 
             Dictionary<string, string> clientDict = new Dictionary<string, string>();
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
+            Dictionary<string, string> vaultDict = new Dictionary<string, string>();
             
+            System.Console.WriteLine("Running INIT command\n");
+
             // GET USER PASSWORD INPUT
             do {
                 System.Console.Write("Please input your master password (minimum 8 characters): ");
@@ -86,6 +89,7 @@ namespace Password_Manager
                 // if (masterPwd.Length < 8) {
                 //     Console.WriteLine("Password too short...");
                 // }
+                System.Console.WriteLine();
             } while (masterPwd.Length < 8);
 
             // SECRET KEY
@@ -110,7 +114,8 @@ namespace Password_Manager
                 aesAlg.Key = key1.GetBytes(32);
 
                 // ENCRYPT VAULT
-                vaultOutput = System.Convert.ToBase64String(EncryptStringToBytes_Aes("vault", aesAlg.Key, aesAlg.IV));
+                string emptyVault = JsonSerializer.Serialize(vaultDict);
+                vaultOutput = System.Convert.ToBase64String(EncryptStringToBytes_Aes(emptyVault, aesAlg.Key, aesAlg.IV));
             }            
 
             // CREATE CLIENT OUTPUT OBJECT
@@ -138,7 +143,58 @@ namespace Password_Manager
         // FUNCTION COMMAND GET 
         private void cmdGet(string[] command)
         {
+            string masterPwd;
+            string secretKey;
+            string clientString;
+            string serverString;
+
+            byte[] skBytes;
+            byte[] ivBytes;
+            byte[] vaultBytes;
+
+            Rfc2898DeriveBytes key1;
+
+            Dictionary<string, string> clientDict;
+            Dictionary<string, string> serverDict;
+            Dictionary<string, string> vaultDict;
             
+            System.Console.WriteLine("Running GET command\n");
+            
+            // MASTER PASSWORD PROMPT
+            System.Console.Write("Please input your Master Password: ");
+            //masterPwd = System.Console.ReadLine();
+            masterPwd = "12345678";
+            System.Console.WriteLine();
+
+            // SECRET KEY PROMPT
+            System.Console.Write("Please input your Secret Key: ");
+            //secretKey = System.Console.ReadLine();
+            secretKey = "ke3e3olAxRkxklKBge7H/w==";
+
+            // READ CLIENT & SERVER FILE CONTENTS
+            clientString = fileManager.ReadFile(command[1]);
+            serverString = fileManager.ReadFile(command[2]);
+
+            // DECODE JSON
+            clientDict = JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
+            serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
+
+            // GET BYTES FROM BASE64STRINGS
+            skBytes = System.Convert.FromBase64String(secretKey);
+            ivBytes = System.Convert.FromBase64String(serverDict["iv"]);
+            vaultBytes = System.Convert.FromBase64String(serverDict["vault"]);
+
+            // CREATE VAULT KEY
+            key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
+
+            // ATTEMPT VAULT DECRYPTION
+            vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
+
+            // PRINT CONTENTS
+            foreach (var item in vaultDict)
+            {
+                System.Console.WriteLine(item.Key);
+            }
         }
 
         // FUNCTION COMMAND SET 

@@ -10,10 +10,11 @@ namespace Password_Manager
         static void Main(string[] args)
         {
             string[] args2 = {"init", "client.json", "server.json"};
+            string[] args3 = {"get", "client.json", "server.json"};
             PasswordManager manager;
 
             // bool run = true;
-            manager = new PasswordManager(args2);
+            manager = new PasswordManager(args3);
             manager.HandleInput();
 
             // MAIN LOOP
