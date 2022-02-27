@@ -188,12 +188,13 @@ namespace Password_Manager
             key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
 
             // ATTEMPT VAULT DECRYPTION
-            vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
+            //vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
+            vaultDict = AccessServerFile(command[2], masterPwd, secretKey);
 
             // PRINT CONTENTS
             foreach (var item in vaultDict)
             {
-                System.Console.WriteLine(item.Key);
+                System.Console.WriteLine(item.Key + ": " + item.Value);
             }
         }
 
@@ -213,6 +214,32 @@ namespace Password_Manager
         private void cmdSecret(string[] command)
         {
             
+        }
+
+        // FUNCTION ACCESS CLIENT FILE
+        private Dictionary<string, string> AccessClientFile(string path)
+        {
+            string clientString = fileManager.ReadFile(path);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
+        }
+
+        // FUNTION ACCESS SERVER FILE
+        private Dictionary<string, string> AccessServerFile(string path, string masterPwd, string secretKey)
+        {
+            // READ SERVER FILE
+            string serverString = fileManager.ReadFile(path);
+            Dictionary<string, string> serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
+
+            // GET BYTES FROM BASE64STRINGS
+            byte[] skBytes = System.Convert.FromBase64String(secretKey);
+            byte[] ivBytes = System.Convert.FromBase64String(serverDict["iv"]);
+            byte[] vaultBytes = System.Convert.FromBase64String(serverDict["vault"]);
+
+            // RECREATE VAULT KEY
+            Rfc2898DeriveBytes key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
+
+            // ATTEMPT VAULT DECRYPTION
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
         }
         
         // FUNCTION BASE64 ENCODE
