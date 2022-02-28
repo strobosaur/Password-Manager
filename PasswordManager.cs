@@ -191,7 +191,7 @@ namespace Password_Manager
             // ATTEMPT VAULT DECRYPTION
             vaultString = DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes);
             vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(vaultString);
-            //vaultDict = AccessServerFile(command[2], masterPwd, secretKey);
+            //vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
 
             // PRINT CONTENTS
             foreach (var item in vaultDict)
@@ -203,7 +203,51 @@ namespace Password_Manager
         // FUNCTION COMMAND SET 
         private void cmdSet(string[] command)
         {
-            
+            string masterPwd;
+            string propPwd;
+            string secretKey;
+
+            Dictionary<string, string> clientDict;
+            Dictionary<string, string> serverDict;
+            Dictionary<string, string> vaultDict;
+
+            Console.WriteLine("Running SET command\n");
+
+            // MASTER PASSWORD PROMPT
+            masterPwd = PasswordPrompt();
+
+            // GET SECRET KEY
+            clientDict = AccessClientFile(command[1]);
+
+            // ACCESS SERVER FILE
+            serverDict = AccessServerFile(command[2]);
+
+            // ACCESS SERVER VAULT
+            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+
+            // GET SECRET KEY
+            secretKey = clientDict["secret"];
+
+            // PERFORM OPERATION
+            if (command.Length == 4)
+            {
+                // ASK FOR PASSWORD TO STORE
+                propPwd = PasswordPrompt("Prop Password");
+
+                // STORE IN DICTIONARY
+                vaultDict.Add(command[3], propPwd);
+            } 
+            else if ((command.Length == 5) && ((command[4] == "-g") || (command[4] == "--generate")))
+            {
+                // GENERATE PASSWORD
+                propPwd = GeneratePassword();
+
+                // STORE IN DICTIONARY
+                vaultDict.Add(command[3], propPwd);
+            }
+
+            // RE-ENCRYPT PASSWORD VAULT
+            WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
         }
 
         // FUNCTION COMMAND DELETE 
@@ -220,6 +264,39 @@ namespace Password_Manager
             Console.WriteLine(clientDict["secret"]);
         }
 
+        // FUNTION MASTER PASSWORD PROMPT
+        private string PasswordPrompt(string value = "Master Password (minimum 8 characters)")
+        {
+            string masterPwd = "";
+            // GET USER PASSWORD INPUT
+            do {
+                Console.Write($"Please input your {value}: ");
+                masterPwd = "12345678";
+                // masterPwd = Console.ReadLine();
+                // if (masterPwd.Length < 8) {
+                //     Console.WriteLine("Password too short...");
+                // }
+                Console.WriteLine();
+            } while (masterPwd.Length < 8);
+
+            return masterPwd;
+        }
+
+        // FUNTION GENERATE PASSWORD
+        private string GeneratePassword(int length = 20)
+        {
+            Random random = new Random();
+            string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            string output = "";
+
+            for(int i = 0; i <= length; i++)
+            {
+                output += validChars[random.Next(validChars.Length)];
+            }
+
+            return output;
+        }
+
         // FUNCTION ACCESS CLIENT FILE
         private Dictionary<string, string> AccessClientFile(string path)
         {
@@ -228,11 +305,17 @@ namespace Password_Manager
         }
 
         // FUNTION ACCESS SERVER FILE
-        private Dictionary<string, string> AccessServerFile(string path, string masterPwd, string secretKey)
+        private Dictionary<string, string> AccessServerFile(string path)
+        {
+            string clientString = fileManager.ReadFile(path);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
+        }
+
+        // FUNTION ACCESS SERVER VAULT
+        private Dictionary<string, string> AccessServerVault(string path, string masterPwd, string secretKey)
         {
             // READ SERVER FILE
-            string serverString = fileManager.ReadFile(path);
-            Dictionary<string, string> serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
+            Dictionary<string, string> serverDict = AccessServerFile(path);
 
             // GET BYTES FROM BASE64STRINGS
             byte[] skBytes = Convert.FromBase64String(secretKey);
