@@ -215,7 +215,9 @@ namespace Password_Manager
         // FUNCTION COMMAND SECRET 
         private void cmdSecret(string[] command)
         {
-            
+            // PRINT CLIENT SECRET KEY
+            Dictionary<string, string> clientDict = AccessClientFile(command[1]);
+            Console.WriteLine(clientDict["secret"]);
         }
 
         // FUNCTION ACCESS CLIENT FILE
@@ -242,6 +244,38 @@ namespace Password_Manager
 
             // ATTEMPT VAULT DECRYPTION
             return JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
+        }
+
+        // FUNCTION WRITE SERVER FILE
+        private void WriteServerFile(string path, Dictionary<string, string> vaultDict, string masterPwd, string secretKey)
+        {
+            string vaultString;
+            string vaultOutput;
+            string serverOutput;
+            string serverString = fileManager.ReadFile(path);
+            Dictionary<string, string> serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
+
+            // CREATE VAULT KEY
+            Rfc2898DeriveBytes key1 = new Rfc2898DeriveBytes(masterPwd, Convert.FromBase64String(secretKey));
+
+            // AES ENCRYPTION
+            using (Aes aesAlg = Aes.Create())
+            {
+                // AES KEY
+                aesAlg.Key = key1.GetBytes(32);
+                aesAlg.IV = Convert.FromBase64String(serverDict["iv"]);
+
+                // ENCRYPT VAULT
+                vaultString = JsonSerializer.Serialize(vaultDict);
+                vaultOutput = Convert.ToBase64String(EncryptStringToBytes_Aes(vaultString, aesAlg.Key, aesAlg.IV));
+            }
+
+            // CREATE SERVER OUTPUT OBJECT
+            serverDict.Add("vault", vaultOutput);
+            serverOutput = JsonSerializer.Serialize(serverDict);
+
+            // CREATE SERVER VAULT FILE
+            fileManager.WriteFile(path, serverOutput);
         }
 
         // FUNCTION ENCRYPT STRING TO BYTES
