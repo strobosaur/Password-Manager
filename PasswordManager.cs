@@ -9,21 +9,15 @@ namespace Password_Manager
 {
     class PasswordManager
     {
-        string[] input;
-
-        InputManager inputManager;
-        FileManager fileManager;
-
+        private string[] input;
+        private FileManager fileManager;
         private RandomNumberGenerator rng;
 
         // CONSTRUCTUR 1
         public PasswordManager(string[] args)
         {
             input = args;
-
-            inputManager = new InputManager();
             fileManager = new FileManager();
-
             rng = RandomNumberGenerator.Create();
         }
 
@@ -244,7 +238,6 @@ namespace Password_Manager
                 propPwd = GeneratePassword();
 
                 // STORE IN DICTIONARY
-                //vaultDict.Add(command[3], propPwd);
                 vaultDict[command[3]] = propPwd;
             }
 
@@ -255,7 +248,36 @@ namespace Password_Manager
         // FUNCTION COMMAND DELETE 
         private void cmdDelete(string[] command)
         {
-            
+            string masterPwd;
+            string secretKey;
+
+            Dictionary<string, string> clientDict;
+            Dictionary<string, string> serverDict;
+            Dictionary<string, string> vaultDict;
+
+            Console.WriteLine("Running DELETE command\n");
+
+            // MASTER PASSWORD PROMPT
+            //masterPwd = PasswordPrompt();
+            masterPwd = "12345678";
+
+            // GET SECRET KEY
+            clientDict = AccessClientFile(command[1]);
+
+            // ACCESS SERVER FILE
+            serverDict = AccessServerFile(command[2]);
+
+            // ACCESS SERVER VAULT
+            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+
+            // GET SECRET KEY
+            secretKey = clientDict["secret"];
+
+            // PERFORM OPERATION
+            vaultDict.Remove(command[3]);
+
+            // RE-ENCRYPT PASSWORD VAULT
+            WriteServerFile(command[2], vaultDict, masterPwd, secretKey);            
         }
 
         // FUNCTION COMMAND SECRET 
@@ -295,8 +317,6 @@ namespace Password_Manager
             {
                 output += validChars[random.Next(validChars.Length)];
             }
-
-            int len = output.Length;
 
             return output;
         }
