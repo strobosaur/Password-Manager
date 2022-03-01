@@ -14,14 +14,17 @@ namespace Password_Manager
         private RandomNumberGenerator rng;
 
         // CONSTRUCTUR 1
+        #region constructor
         public PasswordManager(string[] args)
         {
             input = args;
             fileManager = new FileManager();
             rng = RandomNumberGenerator.Create();
         }
+        #endregion
 
         // FUNCTION HANDLE INPUT
+        #region handle input
         public void HandleInput()
         {
             switch (input[0].ToLower())
@@ -55,8 +58,10 @@ namespace Password_Manager
                 break;
             }            
         }
+        #endregion
 
         // FUNCTION COMMAND INIT 
+        #region init
         private void cmdInit(string[] command)
         {
             string masterPwd;
@@ -127,14 +132,18 @@ namespace Password_Manager
             // CREATE SERVER VAULT FILE
             fileManager.WriteFile(command[2], serverOutput);
         }
+        #endregion
 
-        // FUNCTION COMMAND CREATE 
+        // FUNCTION COMMAND CREATE
+        #region create
         private void cmdCreate(string[] command)
         {
             
         }
+        #endregion
 
         // FUNCTION COMMAND GET 
+        #region get
         private void cmdGet(string[] command)
         {
             string masterPwd;
@@ -193,8 +202,10 @@ namespace Password_Manager
                 Console.WriteLine(item.Key + ": " + item.Value);
             }
         }
+        #endregion
 
-        // FUNCTION COMMAND SET 
+        // FUNCTION COMMAND SET
+        #region set
         private void cmdSet(string[] command)
         {
             string masterPwd;
@@ -244,8 +255,10 @@ namespace Password_Manager
             // RE-ENCRYPT PASSWORD VAULT
             WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
         }
+        #endregion
 
         // FUNCTION COMMAND DELETE 
+        #region delete
         private void cmdDelete(string[] command)
         {
             string masterPwd;
@@ -279,8 +292,10 @@ namespace Password_Manager
             // RE-ENCRYPT PASSWORD VAULT
             WriteServerFile(command[2], vaultDict, masterPwd, secretKey);            
         }
+        #endregion
 
         // FUNCTION COMMAND SECRET 
+        #region secret
         private void cmdSecret(string[] command)
         {
             // PRINT CLIENT SECRET KEY
@@ -305,8 +320,10 @@ namespace Password_Manager
 
             return masterPwd;
         }
+        #endregion
 
         // FUNTION GENERATE PASSWORD
+        #region generate password
         private string GeneratePassword(int length = 20)
         {
             Random random = new Random();
@@ -320,22 +337,28 @@ namespace Password_Manager
 
             return output;
         }
+        #endregion
 
         // FUNCTION ACCESS CLIENT FILE
+        #region access client file
         private Dictionary<string, string> AccessClientFile(string path)
         {
             string clientString = fileManager.ReadFile(path);
             return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
         }
+        #endregion
 
         // FUNTION ACCESS SERVER FILE
+        #region access server file
         private Dictionary<string, string> AccessServerFile(string path)
         {
             string clientString = fileManager.ReadFile(path);
             return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
         }
+        #endregion
 
         // FUNTION ACCESS SERVER VAULT
+        #region access server vault
         private Dictionary<string, string> AccessServerVault(string path, string masterPwd, string secretKey)
         {
             // READ SERVER FILE
@@ -352,8 +375,10 @@ namespace Password_Manager
             // ATTEMPT VAULT DECRYPTION
             return JsonSerializer.Deserialize<Dictionary<string, string>>(DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes));
         }
+        #endregion
 
         // FUNCTION WRITE SERVER FILE
+        #region write server file
         private void WriteServerFile(string path, Dictionary<string, string> vaultDict, string masterPwd, string secretKey)
         {
             string vaultString;
@@ -378,15 +403,16 @@ namespace Password_Manager
             }
 
             // CREATE SERVER OUTPUT OBJECT
-            //serverDict.Add("vault", vaultOutput);
             serverDict["vault"] = vaultOutput;
             serverOutput = JsonSerializer.Serialize(serverDict);
 
             // CREATE SERVER VAULT FILE
             fileManager.WriteFile(path, serverOutput);
         }
+        #endregion
 
         // FUNCTION ENCRYPT STRING TO BYTES
+        #region encrypt
         static byte[] EncryptStringToBytes_Aes(string plainText, byte[] Key, byte[] IV)
         {
             // Check arguments.
@@ -426,8 +452,10 @@ namespace Password_Manager
             // Return the encrypted bytes from the memory stream.
             return encrypted;
         }
+        #endregion
 
         // FUNCTION DECRYPT BYTES TO STRING
+        #region decrypt
         static string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
         {
             // Check arguments.
@@ -470,5 +498,6 @@ namespace Password_Manager
 
             return plaintext;
         }
+        #endregion
     }
 }
