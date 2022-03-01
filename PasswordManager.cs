@@ -81,17 +81,10 @@ namespace Password_Manager
             Console.WriteLine("Running INIT command\n");
 
             // GET USER PASSWORD INPUT
-            do {
-                Console.Write("Please input your master password (minimum 8 characters): ");
-                masterPwd = "12345678";
-                // masterPwd = Console.ReadLine();
-                // if (masterPwd.Length < 8) {
-                //     Console.WriteLine("Password too short...");
-                // }
-                Console.WriteLine();
-            } while (masterPwd.Length < 8);
+            // masterPwd = PasswordPrompt();
+            masterPwd = "12345678";
 
-            // SECRET KEY
+            // GENERATE SECRET KEY
             skBytes = new byte[16];
             rng.GetBytes(skBytes);
             secretKey = Convert.ToBase64String(skBytes);
@@ -115,7 +108,7 @@ namespace Password_Manager
                 // ENCRYPT VAULT
                 string emptyVault = JsonSerializer.Serialize(vaultDict);
                 vaultOutput = Convert.ToBase64String(EncryptStringToBytes_Aes(emptyVault, aesAlg.Key, aesAlg.IV));
-            }            
+            }
 
             // CREATE CLIENT OUTPUT OBJECT
             clientDict.Add("secret", secretKey);
@@ -126,7 +119,7 @@ namespace Password_Manager
             serverDict.Add("iv", iv);
             serverOutput = JsonSerializer.Serialize(serverDict);
 
-            // CREATE CLIENT VAULT FILE
+            // CREATE CLIENT FILE
             fileManager.WriteFile(command[1], clientOutput);
 
             // CREATE SERVER VAULT FILE
@@ -138,7 +131,43 @@ namespace Password_Manager
         #region create
         private void cmdCreate(string[] command)
         {
+            string masterPwd;
+            string secretKey;
+            string clientOutput;
+
+            Dictionary<string, string> clientDict = new Dictionary<string, string>();
+            Dictionary<string, string> serverDict = new Dictionary<string, string>();
+            Dictionary<string, string> vaultDict = new Dictionary<string, string>();
             
+            Console.WriteLine("Running CREATE command\n");
+
+            // MASTER PASSWORD PROMPT
+            masterPwd = PasswordPrompt();
+
+            // SECRET KEY PROMPT
+            //secretKey = PasswordPrompt("Secret Key");
+            secretKey = "ke3e3olAxRkxklKBge7H/w==";
+
+            // ATTEMPT DECRYPTION
+            try {
+                // ACCESS SERVER FILE
+                serverDict = AccessServerFile(command[2]);
+
+                // ACCESS SERVER VAULT
+                vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
+
+                // CREATE CLIENT OUTPUT OBJECT
+                clientDict.Add("secret", secretKey);
+                clientOutput = JsonSerializer.Serialize(clientDict);
+
+                // CREATE CLIENT FILE
+                fileManager.WriteFile(command[1], clientOutput);
+            }
+            // FAILURE
+            catch (Exception e)
+            {
+                Console.WriteLine($"Something went wrong.\n\n Exception thrown: {e}");
+            }            
         }
         #endregion
 
@@ -234,26 +263,30 @@ namespace Password_Manager
             // GET SECRET KEY
             secretKey = clientDict["secret"];
 
-            // PERFORM OPERATION
-            if (command.Length == 4)
-            {
-                // ASK FOR PASSWORD TO STORE
-                propPwd = PasswordPrompt("Prop Password");
+            try {
+                // PERFORM OPERATION
+                if (command.Length == 4)
+                {
+                    // ASK FOR PASSWORD TO STORE
+                    propPwd = PasswordPrompt("Prop Password");
 
-                // STORE IN DICTIONARY
-                vaultDict.Add(command[3], propPwd);
-            } 
-            else if ((command.Length == 5) && ((command[4] == "-g") || (command[4] == "--generate")))
-            {
-                // GENERATE PASSWORD
-                propPwd = GeneratePassword();
+                    // STORE IN DICTIONARY
+                    vaultDict.Add(command[3], propPwd);
+                } 
+                else if ((command.Length == 5) && ((command[4] == "-g") || (command[4] == "--generate")))
+                {
+                    // GENERATE PASSWORD
+                    propPwd = GeneratePassword();
 
-                // STORE IN DICTIONARY
-                vaultDict[command[3]] = propPwd;
+                    // STORE IN DICTIONARY
+                    vaultDict[command[3]] = propPwd;
+                }
+
+                // RE-ENCRYPT PASSWORD VAULT
+                WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+            } catch (Exception e) {
+                Console.WriteLine($"Something went wrong.\n\n Exception thrown: {e}");
             }
-
-            // RE-ENCRYPT PASSWORD VAULT
-            WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
         }
         #endregion
 
@@ -302,11 +335,21 @@ namespace Password_Manager
             Dictionary<string, string> clientDict = AccessClientFile(command[1]);
             Console.WriteLine(clientDict["secret"]);
         }
+        #endregion
 
         // FUNTION MASTER PASSWORD PROMPT
-        private string PasswordPrompt(string value = "Master Password (minimum 8 characters)")
+        #region password prompt
+        private string PasswordPrompt(string value = "Master Password", int minLength = 1)
         {
             string masterPwd = "";
+            string prompt = $"Please input your {value}";
+
+            // CHECK FOR ADDITION TO PROMPT STRING
+            if (minLength > 1)
+                prompt += $", minimum length {minLength}: ";
+            else
+                prompt += ": ";
+
             // GET USER PASSWORD INPUT
             do {
                 Console.Write($"Please input your {value}: ");
@@ -316,7 +359,7 @@ namespace Password_Manager
                 //     Console.WriteLine("Password too short...");
                 // }
                 Console.WriteLine();
-            } while (masterPwd.Length < 8);
+            } while (masterPwd.Length < minLength);
 
             return masterPwd;
         }
