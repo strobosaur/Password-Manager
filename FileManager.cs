@@ -7,9 +7,8 @@ namespace Password_Manager
 {
     class FileManager
     {
-        string pathClient = @"client.txt";
-        string pathServer = @"server.txt";
-
+        // FUNTION WRITE FILE
+        #region write file
         public void WriteFile(string path, string input = "", bool overwrite = true)
         {
             if (!File.Exists(path))
@@ -21,7 +20,10 @@ namespace Password_Manager
                 File.WriteAllText(path, input);
             }
         }
+        #endregion
 
+        // FUNTION READ FILE
+        #region read file
         public string ReadFile(string path)
         {
             string result = "";
@@ -36,9 +38,12 @@ namespace Password_Manager
                         result += line;
                     }
                 }
+            } else {
+                throw new Exception($"File does not exist {(path)}");
             }
 
             return result;
         }
+        #endregion
     }
 }

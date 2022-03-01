@@ -13,9 +13,11 @@ namespace Password_Manager
             string[] args3 = {"get", "client.json", "server.json"};
             string[] args4 = {"set", "client.json", "server.json", "hotmail.com", "-g"};
             string[] args5 = {"delete", "client.json", "server.json", "hotmail.com"};
+            string[] args6 = {"create", "client2.json", "server.json"};
+            string[] args7 = {"set", "client2.json", "server.json", "flashback.org", "-g"};
 
             // bool run = true;
-            PasswordManager manager = new PasswordManager(args4);
+            PasswordManager manager = new PasswordManager(args7);
             manager.HandleInput();
 
             // MAIN LOOP
