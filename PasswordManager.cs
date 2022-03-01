@@ -27,36 +27,41 @@ namespace Password_Manager
         #region handle input
         public void HandleInput()
         {
-            switch (input[0].ToLower())
-            {
-                case "init":
-                cmdInit(input);
-                break;
+            try {
+                // DETERMINE OPERATION
+                switch (input[0].ToLower())
+                {
+                    case "init":
+                    cmdInit(input);
+                    break;
 
-                case "create":
-                cmdCreate(input);
-                break;
+                    case "create":
+                    cmdCreate(input);
+                    break;
 
-                case "get":
-                cmdGet(input);
-                break;
+                    case "get":
+                    cmdGet(input);
+                    break;
 
-                case "set":
-                cmdSet(input);
-                break;
+                    case "set":
+                    cmdSet(input);
+                    break;
 
-                case "delete":
-                cmdDelete(input);
-                break;
+                    case "delete":
+                    cmdDelete(input);
+                    break;
 
-                case "secret":
-                cmdSecret(input);
-                break;
+                    case "secret":
+                    cmdSecret(input);
+                    break;
 
-                default:
-                Console.WriteLine("Invalid input");
-                break;
-            }            
+                    default:
+                    Console.WriteLine("Invalid input");
+                    break;
+                }
+            } catch (Exception e) {
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
+            }
         }
         #endregion
 
@@ -166,7 +171,7 @@ namespace Password_Manager
             // FAILURE
             catch (Exception e)
             {
-                Console.WriteLine($"Something went wrong.\n\n Exception thrown: {e}");
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
             }            
         }
         #endregion
@@ -263,6 +268,7 @@ namespace Password_Manager
             // GET SECRET KEY
             secretKey = clientDict["secret"];
 
+            // ATTEMPT OPERATION
             try {
                 // PERFORM OPERATION
                 if (command.Length == 4)
@@ -284,8 +290,9 @@ namespace Password_Manager
 
                 // RE-ENCRYPT PASSWORD VAULT
                 WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+
             } catch (Exception e) {
-                Console.WriteLine($"Something went wrong.\n\n Exception thrown: {e}");
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
             }
         }
         #endregion
@@ -346,7 +353,7 @@ namespace Password_Manager
 
             // CHECK FOR ADDITION TO PROMPT STRING
             if (minLength > 1)
-                prompt += $", minimum length {minLength}: ";
+                prompt += $" (minimum length {minLength}): ";
             else
                 prompt += ": ";
 
@@ -465,31 +472,35 @@ namespace Password_Manager
                 throw new ArgumentNullException("Key");
             if (IV == null || IV.Length <= 0)
                 throw new ArgumentNullException("IV");
-            byte[] encrypted;
+            byte[] encrypted = new byte[0];
 
-            // Create an Aes object
-            // with the specified key and IV.
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
-
-                // Create an encryptor to perform the stream transform.
-                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-
-                // Create the streams used for encryption.
-                using (MemoryStream msEncrypt = new MemoryStream())
+            try {
+                // Create an Aes object
+                // with the specified key and IV.
+                using (Aes aesAlg = Aes.Create())
                 {
-                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    aesAlg.Key = Key;
+                    aesAlg.IV = IV;
+
+                    // Create an encryptor to perform the stream transform.
+                    ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                    // Create the streams used for encryption.
+                    using (MemoryStream msEncrypt = new MemoryStream())
                     {
-                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                         {
-                            //Write all data to the stream.
-                            swEncrypt.Write(plainText);
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                //Write all data to the stream.
+                                swEncrypt.Write(plainText);
+                            }
+                            encrypted = msEncrypt.ToArray();
                         }
-                        encrypted = msEncrypt.ToArray();
                     }
                 }
+            } catch (Exception e){
+                Console.WriteLine($"Encryption failed.\n\nException thrown: {e}");
             }
 
             // Return the encrypted bytes from the memory stream.
@@ -513,30 +524,34 @@ namespace Password_Manager
             // the decrypted text.
             string plaintext = null;
 
+            try {
             // Create an Aes object
             // with the specified key and IV.
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
-
-                // Create a decryptor to perform the stream transform.
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                // Create the streams used for decryption.
-                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                using (Aes aesAlg = Aes.Create())
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-                        {
+                    aesAlg.Key = Key;
+                    aesAlg.IV = IV;
 
-                            // Read the decrypted bytes from the decrypting stream
-                            // and place them in a string.
-                            plaintext = srDecrypt.ReadToEnd();
+                    // Create a decryptor to perform the stream transform.
+                    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                    // Create the streams used for decryption.
+                    using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                    {
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+
+                                // Read the decrypted bytes from the decrypting stream
+                                // and place them in a string.
+                                plaintext = srDecrypt.ReadToEnd();
+                            }
                         }
                     }
                 }
+            } catch (Exception e) {
+                Console.WriteLine($"Decryption failed.\n\nException thrown: {e}");
             }
 
             return plaintext;

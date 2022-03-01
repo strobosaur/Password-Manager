@@ -39,7 +39,7 @@ namespace Password_Manager
                     }
                 }
             } else {
-                throw new Exception($"File does not exist {(path)}");
+                throw new Exception($"File does not exist ({path})");
             }
 
             return result;
