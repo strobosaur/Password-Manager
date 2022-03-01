@@ -214,7 +214,8 @@ namespace Password_Manager
             Console.WriteLine("Running SET command\n");
 
             // MASTER PASSWORD PROMPT
-            masterPwd = PasswordPrompt();
+            //masterPwd = PasswordPrompt();
+            masterPwd = "12345678";
 
             // GET SECRET KEY
             clientDict = AccessClientFile(command[1]);
@@ -243,7 +244,8 @@ namespace Password_Manager
                 propPwd = GeneratePassword();
 
                 // STORE IN DICTIONARY
-                vaultDict.Add(command[3], propPwd);
+                //vaultDict.Add(command[3], propPwd);
+                vaultDict[command[3]] = propPwd;
             }
 
             // RE-ENCRYPT PASSWORD VAULT
@@ -289,10 +291,12 @@ namespace Password_Manager
             string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
             string output = "";
 
-            for(int i = 0; i <= length; i++)
+            for(int i = 0; i < length; i++)
             {
                 output += validChars[random.Next(validChars.Length)];
             }
+
+            int len = output.Length;
 
             return output;
         }
@@ -354,7 +358,8 @@ namespace Password_Manager
             }
 
             // CREATE SERVER OUTPUT OBJECT
-            serverDict.Add("vault", vaultOutput);
+            //serverDict.Add("vault", vaultOutput);
+            serverDict["vault"] = vaultOutput;
             serverOutput = JsonSerializer.Serialize(serverDict);
 
             // CREATE SERVER VAULT FILE
