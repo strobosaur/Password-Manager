@@ -32,31 +32,49 @@ namespace Password_Manager
                 switch (input[0].ToLower())
                 {
                     case "init":
-                    cmdInit(input);
+                    if (input.Length == 3)
+                        cmdInit(input);
+                    else
+                        Console.WriteLine("Invalid INIT input format.");
                     break;
 
                     case "create":
-                    cmdCreate(input);
+                    if (input.Length == 3)
+                        cmdCreate(input);
+                    else
+                        Console.WriteLine("Invalid CREATE input format.");
                     break;
 
                     case "get":
-                    cmdGet(input);
+                    if ((input.Length == 3) || (input.Length == 4))
+                        cmdGet(input);
+                    else
+                        Console.WriteLine("Invalid GET input format.");
                     break;
 
                     case "set":
-                    cmdSet(input);
+                    if ((input.Length == 4) || (input.Length == 5))
+                        cmdSet(input);
+                    else
+                        Console.WriteLine("Invalid SET input format.");
                     break;
 
                     case "delete":
-                    cmdDelete(input);
+                    if (input.Length == 4)
+                        cmdDelete(input);
+                    else
+                        Console.WriteLine("Invalid DELETE input format.");
                     break;
 
                     case "secret":
-                    cmdSecret(input);
+                    if (input.Length == 2)
+                        cmdSecret(input);
+                    else
+                        Console.WriteLine("Invalid SECRET input format.");
                     break;
 
                     default:
-                    Console.WriteLine("Invalid input");
+                    Console.WriteLine("Invalid command input");
                     break;
                 }
             } catch (Exception e) {
