@@ -1,6 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.Text.Json;
 using System.Linq;
 
 namespace Password_Manager
@@ -15,9 +13,10 @@ namespace Password_Manager
             string[] args5 = {"delete", "client.json", "server.json", "hotmail.com"};
             string[] args6 = {"create", "client2.json", "server.json"};
             string[] args7 = {"set", "client2.json", "server.json", "flashback.org", "-g"};
+            string[] args8 = {"get", "client.json", "server.json", "hotmail.com"};
 
             // bool run = true;
-            PasswordManager manager = new PasswordManager(args7);
+            PasswordManager manager = new PasswordManager(args8);
             manager.HandleInput();
 
             // MAIN LOOP

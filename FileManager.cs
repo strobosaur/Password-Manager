@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 namespace Password_Manager
@@ -11,13 +9,17 @@ namespace Password_Manager
         #region write file
         public void WriteFile(string path, string input = "", bool overwrite = true)
         {
-            if (!File.Exists(path))
-            {
-                File.WriteAllText(path, input);
-            } 
-            else if (overwrite) 
-            {
-                File.WriteAllText(path, input);
+            try {
+                if (!File.Exists(path))
+                {
+                    File.WriteAllText(path, input);
+                } 
+                else if (overwrite) 
+                {
+                    File.WriteAllText(path, input);
+                }
+            } catch (Exception e) {
+                Console.WriteLine($"Write file failed.\n\nException thrown: {e.Message}");
             }
         }
         #endregion
@@ -28,18 +30,22 @@ namespace Password_Manager
         {
             string result = "";
 
-            if (File.Exists(path))
-            {
-                using (StreamReader sr = new StreamReader(path))
+            try {
+                if (File.Exists(path))
                 {
-                    string line = "";
-                    while((line = sr.ReadLine()) != null)
+                    using (StreamReader sr = new StreamReader(path))
                     {
-                        result += line;
+                        string line = "";
+                        while((line = sr.ReadLine()) != null)
+                        {
+                            result += line;
+                        }
                     }
+                } else {
+                    throw new Exception($"File does not exist ({path})");
                 }
-            } else {
-                throw new Exception($"File does not exist ({path})");
+            } catch (Exception e) {
+                Console.WriteLine($"Read file failed.\n\nException thrown: {e.Message}");
             }
 
             return result;

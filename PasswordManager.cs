@@ -60,7 +60,7 @@ namespace Password_Manager
                     break;
                 }
             } catch (Exception e) {
-                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e.Message}");
             }
         }
         #endregion
@@ -95,7 +95,7 @@ namespace Password_Manager
             secretKey = Convert.ToBase64String(skBytes);
 
             // PRINT SECRET KEY TO CONSOLE
-            Console.WriteLine("Your generated Secret Key is:\n\n" + secretKey + "\n");
+            Console.WriteLine($"Your generated Secret Key is:\n\n{secretKey}\n");
 
             // CREATE VAULT KEY
             key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
@@ -169,9 +169,8 @@ namespace Password_Manager
                 fileManager.WriteFile(command[1], clientOutput);
             }
             // FAILURE
-            catch (Exception e)
-            {
-                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
+            catch (Exception e) {
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e.Message}");
             }            
         }
         #endregion
@@ -182,15 +181,6 @@ namespace Password_Manager
         {
             string masterPwd;
             string secretKey;
-            string clientString;
-            string serverString;
-            string vaultString;
-
-            byte[] skBytes;
-            byte[] ivBytes;
-            byte[] vaultBytes;
-
-            Rfc2898DeriveBytes key1;
 
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
@@ -199,41 +189,42 @@ namespace Password_Manager
             Console.WriteLine("Running GET command\n");
             
             // MASTER PASSWORD PROMPT
-            Console.Write("Please input your Master Password: ");
-            //masterPwd = System.Console.ReadLine();
+            //masterPwd = PasswordPrompt();
             masterPwd = "12345678";
             Console.WriteLine();
 
             // SECRET KEY PROMPT
-            Console.Write("Please input your Secret Key: ");
-            //secretKey = System.Console.ReadLine();
+            //secretKey = PasswordPrompt("Secret Key", 1);
             secretKey = "ke3e3olAxRkxklKBge7H/w==";
 
-            // READ CLIENT & SERVER FILE CONTENTS
-            clientString = fileManager.ReadFile(command[1]);
-            serverString = fileManager.ReadFile(command[2]);
+            // ACCESS CLIENT FILE
+            clientDict = AccessClientFile(command[1]);
 
-            // DECODE JSON
-            clientDict = JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
-            serverDict = JsonSerializer.Deserialize<Dictionary<string, string>>(serverString);
+            // ACCESS SERVER FILE
+            serverDict = AccessServerFile(command[2]);
 
-            // GET BYTES FROM BASE64STRINGS
-            skBytes = Convert.FromBase64String(secretKey);
-            ivBytes = Convert.FromBase64String(serverDict["iv"]);
-            vaultBytes = Convert.FromBase64String(serverDict["vault"]);
+            // CHECK FOR SECRET KEY MATCH
+            if (secretKey == clientDict["secret"]){
 
-            // CREATE VAULT KEY
-            key1 = new Rfc2898DeriveBytes(masterPwd, skBytes);
+                // ACCESS SERVER VAULT
+                vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
 
-            // ATTEMPT VAULT DECRYPTION
-            vaultString = DecryptStringFromBytes_Aes(vaultBytes, key1.GetBytes(32), ivBytes);
-            vaultDict = JsonSerializer.Deserialize<Dictionary<string, string>>(vaultString);
-            //vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
+                // DETERMINE OPERATION
+                if (command.Length == 3) {
+                    
+                    // PRINT ALL KEYS
+                    foreach (var item in vaultDict)
+                    {
+                        Console.WriteLine(item.Key);
+                    }
+                } else if (command.Length == 4) {
 
-            // PRINT CONTENTS
-            foreach (var item in vaultDict)
-            {
-                Console.WriteLine(item.Key + ": " + item.Value);
+                    // PRINT PROP PASSWORD
+                    Console.WriteLine(vaultDict[command[3]]);
+                }
+            // WRONG SECRET KEY
+            } else {
+                Console.WriteLine("Invalid Secret Key, operation aborted.");
             }
         }
         #endregion
@@ -256,7 +247,7 @@ namespace Password_Manager
             //masterPwd = PasswordPrompt();
             masterPwd = "12345678";
 
-            // GET SECRET KEY
+            // ACCESS CLIENT FILE
             clientDict = AccessClientFile(command[1]);
 
             // ACCESS SERVER FILE
@@ -291,8 +282,9 @@ namespace Password_Manager
                 // RE-ENCRYPT PASSWORD VAULT
                 WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
 
+            // FAILURE
             } catch (Exception e) {
-                Console.WriteLine($"Something went wrong.\n\nException thrown: {e}");
+                Console.WriteLine($"Something went wrong.\n\nException thrown: {e.Message}");
             }
         }
         #endregion
@@ -344,7 +336,7 @@ namespace Password_Manager
         }
         #endregion
 
-        // FUNTION MASTER PASSWORD PROMPT
+        // FUNCTION MASTER PASSWORD PROMPT
         #region password prompt
         private string PasswordPrompt(string value = "Master Password", int minLength = 1)
         {
@@ -353,9 +345,9 @@ namespace Password_Manager
 
             // CHECK FOR ADDITION TO PROMPT STRING
             if (minLength > 1)
-                prompt += $" (minimum length {minLength}): ";
-            else
-                prompt += ": ";
+                prompt += $" (minimum length {minLength})";
+
+            prompt += ": ";
 
             // GET USER PASSWORD INPUT
             do {
@@ -372,7 +364,7 @@ namespace Password_Manager
         }
         #endregion
 
-        // FUNTION GENERATE PASSWORD
+        // FUNCTION GENERATE PASSWORD
         #region generate password
         private string GeneratePassword(int length = 20)
         {
@@ -500,7 +492,7 @@ namespace Password_Manager
                     }
                 }
             } catch (Exception e){
-                Console.WriteLine($"Encryption failed.\n\nException thrown: {e}");
+                Console.WriteLine($"Encryption failed.\n\nException thrown: {e.Message}");
             }
 
             // Return the encrypted bytes from the memory stream.
@@ -551,7 +543,7 @@ namespace Password_Manager
                     }
                 }
             } catch (Exception e) {
-                Console.WriteLine($"Decryption failed.\n\nException thrown: {e}");
+                Console.WriteLine($"Decryption failed.\n\nException thrown: {e.Message}");
             }
 
             return plaintext;
