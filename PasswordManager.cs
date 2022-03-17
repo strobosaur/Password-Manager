@@ -93,6 +93,7 @@ namespace Password_Manager
             string vaultOutput;
             string clientOutput;
             string serverOutput;
+            string emptyVault;
             byte[] skBytes;
 
             Rfc2898DeriveBytes key1;
@@ -101,7 +102,7 @@ namespace Password_Manager
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
             Dictionary<string, string> vaultDict = new Dictionary<string, string>();
             
-            Console.WriteLine("Running INIT command\n");
+            //Console.WriteLine("Running INIT command\n");
 
             // GET USER PASSWORD INPUT
             //masterPwd = "12345678";
@@ -130,7 +131,7 @@ namespace Password_Manager
                 aesAlg.Key = key1.GetBytes(32);
 
                 // ENCRYPT VAULT
-                string emptyVault = JsonSerializer.Serialize(vaultDict);
+                emptyVault = JsonSerializer.Serialize(vaultDict);
                 vaultOutput = Convert.ToBase64String(EncryptStringToBytes_Aes(emptyVault, aesAlg.Key, aesAlg.IV));
             }
 
@@ -163,7 +164,7 @@ namespace Password_Manager
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
             Dictionary<string, string> vaultDict = new Dictionary<string, string>();
             
-            Console.WriteLine("Running CREATE command\n");
+            //Console.WriteLine("Running CREATE command\n");
 
             // MASTER PASSWORD PROMPT
             masterPwd = PasswordPrompt();
@@ -199,21 +200,16 @@ namespace Password_Manager
         private void cmdGet(string[] command)
         {
             string masterPwd;
-            string secretKey;
 
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
             
-            Console.WriteLine("Running GET command\n");
+            //Console.WriteLine("Running GET command\n");
             
             // MASTER PASSWORD PROMPT
             //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
-
-            // SECRET KEY PROMPT
-            //secretKey = "ke3e3olAxRkxklKBge7H/w==";
-            secretKey = PasswordPrompt("Secret Key");
 
             // ACCESS CLIENT FILE
             clientDict = AccessClientFile(command[1]);
@@ -221,28 +217,21 @@ namespace Password_Manager
             // ACCESS SERVER FILE
             serverDict = AccessServerFile(command[2]);
 
-            // CHECK FOR SECRET KEY MATCH
-            if (secretKey == clientDict["secret"]){
+            // ACCESS SERVER VAULT
+            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
 
-                // ACCESS SERVER VAULT
-                vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
-
-                // DETERMINE OPERATION
-                if (command.Length == 3) {
-                    
-                    // PRINT ALL KEYS IN VAULT
-                    foreach (var item in vaultDict)
-                    {
-                        Console.WriteLine(item.Key);
-                    }
-                } else if (command.Length == 4) {
-
-                    // PRINT CHOSEN PROP PASSWORD
-                    Console.WriteLine(vaultDict[command[3]]);
+            // DETERMINE OPERATION
+            if (command.Length == 3) {
+                
+                // PRINT ALL KEYS IN VAULT
+                foreach (var item in vaultDict)
+                {
+                    Console.WriteLine(item.Key);
                 }
-            // WRONG SECRET KEY
-            } else {
-                Console.WriteLine("Invalid Secret Key, operation aborted.");
+            } else if (command.Length == 4) {
+
+                // PRINT CHOSEN PROP PASSWORD
+                Console.WriteLine(vaultDict[command[3]]);
             }
         }
         #endregion
@@ -259,7 +248,7 @@ namespace Password_Manager
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
 
-            Console.WriteLine("Running SET command\n");
+            //Console.WriteLine("Running SET command\n");
 
             // MASTER PASSWORD PROMPT
             //masterPwd = "12345678";
@@ -286,7 +275,7 @@ namespace Password_Manager
                     propPwd = PasswordPrompt("Prop Password");
 
                     // STORE IN DICTIONARY
-                    vaultDict.Add(command[3], propPwd);
+                    vaultDict[command[3]] = propPwd;
 
                     // RE-ENCRYPT PASSWORD VAULT
                     WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
@@ -323,13 +312,13 @@ namespace Password_Manager
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
 
-            Console.WriteLine("Running DELETE command\n");
+            //Console.WriteLine("Running DELETE command\n");
 
             // MASTER PASSWORD PROMPT
             //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
-            // GET SECRET KEY
+            // ACCESS CLIENT FILE
             clientDict = AccessClientFile(command[1]);
 
             // ACCESS SERVER FILE
@@ -359,11 +348,11 @@ namespace Password_Manager
         }
         #endregion
 
-        // FUNCTION MASTER PASSWORD PROMPT
+        // FUNCTION PASSWORD PROMPT
         #region password prompt
         private string PasswordPrompt(string value = "Master Password", int minLength = 1)
         {
-            string masterPwd = "";
+            string outString;
 
             // CREATE PROMPT STRING
             string prompt = $"Please input your {value}";
@@ -380,16 +369,16 @@ namespace Password_Manager
 
                 // READ CONSOLE INPUT
                 //masterPwd = "12345678";
-                masterPwd = Console.ReadLine();
+                outString = Console.ReadLine();
 
                 // CHECK PASSWORD LENGTH
-                if (masterPwd.Length < minLength) {
-                    Console.WriteLine("Password too short...");
+                if (outString.Length < minLength) {
+                    Console.WriteLine($"{value} too short...");
                 }
                 Console.WriteLine();
-            } while (masterPwd.Length < minLength);
+            } while (outString.Length < minLength);
 
-            return masterPwd;
+            return outString;
         }
         #endregion
 
@@ -401,6 +390,7 @@ namespace Password_Manager
             string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
             string output = "";
 
+            // ADD RANDOM VALID CHAR TO OUT STRING
             for(int i = 0; i < length; i++)
             {
                 output += validChars[random.Next(validChars.Length)];
@@ -414,6 +404,11 @@ namespace Password_Manager
         #region access client file
         private Dictionary<string, string> AccessClientFile(string path)
         {
+            // CHECK IF FILE EXISTS
+            if (!File.Exists(path)) {
+                throw new FileNotFoundException($"Client file not found at path: {path}.");
+            }
+                
             try {
                 string clientString = fileManager.ReadFile(path);
                 return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
@@ -428,6 +423,11 @@ namespace Password_Manager
         #region access server file
         private Dictionary<string, string> AccessServerFile(string path)
         {
+            // CHECK IF FILE EXISTS
+            if (!File.Exists(path)) {
+                throw new FileNotFoundException($"Server file not found at path: {path}.");
+            }
+
             try {
                 string clientString = fileManager.ReadFile(path);
                 return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
@@ -572,7 +572,6 @@ namespace Password_Manager
                         {
                             using (StreamReader srDecrypt = new StreamReader(csDecrypt))
                             {
-
                                 // Read the decrypted bytes from the decrypting stream
                                 // and place them in a string.
                                 plaintext = srDecrypt.ReadToEnd();
@@ -581,7 +580,7 @@ namespace Password_Manager
                     }
                 }
             } catch (Exception e) {
-                Console.WriteLine($"Decryption failed.\n\nException thrown: {e.Message}");
+                throw new Exception($"Decryption failed.\n\nException thrown: {e.Message}");
             }
 
             return plaintext;
