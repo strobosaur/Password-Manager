@@ -190,7 +190,7 @@ namespace Password_Manager
             }
             // FAILURE
             catch (Exception e) {
-                Console.WriteLine($"Something went wrong.\n\nException thrown: {e.Message}");
+                Console.WriteLine($"CREATE command failed.\n\nException thrown: {e.Message}");
             }            
         }
         #endregion
@@ -211,27 +211,31 @@ namespace Password_Manager
             //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
-            // ACCESS CLIENT FILE
-            clientDict = AccessClientFile(command[1]);
+            try {
+                // ACCESS CLIENT FILE
+                clientDict = AccessClientFile(command[1]);
 
-            // ACCESS SERVER FILE
-            serverDict = AccessServerFile(command[2]);
+                // ACCESS SERVER FILE
+                serverDict = AccessServerFile(command[2]);
 
-            // ACCESS SERVER VAULT
-            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+                // ACCESS SERVER VAULT
+                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
 
-            // DETERMINE OPERATION
-            if (command.Length == 3) {
-                
-                // PRINT ALL KEYS IN VAULT
-                foreach (var item in vaultDict)
-                {
-                    Console.WriteLine(item.Key);
+                // DETERMINE OPERATION
+                if (command.Length == 3) {
+                    
+                    // PRINT ALL KEYS IN VAULT
+                    foreach (var item in vaultDict)
+                    {
+                        Console.WriteLine(item.Key);
+                    }
+                } else if (command.Length == 4) {
+
+                    // PRINT CHOSEN PROP PASSWORD
+                    Console.WriteLine(vaultDict[command[3]]);
                 }
-            } else if (command.Length == 4) {
-
-                // PRINT CHOSEN PROP PASSWORD
-                Console.WriteLine(vaultDict[command[3]]);
+            } catch (Exception e){
+                Console.WriteLine($"GET command failed.\n\nException thrown: {e.Message}");
             }
         }
         #endregion
@@ -254,20 +258,20 @@ namespace Password_Manager
             //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
-            // ACCESS CLIENT FILE
-            clientDict = AccessClientFile(command[1]);
-
-            // ACCESS SERVER FILE
-            serverDict = AccessServerFile(command[2]);
-
-            // ACCESS SERVER VAULT
-            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
-
-            // GET SECRET KEY
-            secretKey = clientDict["secret"];
-
             // ATTEMPT OPERATION
             try {
+                // ACCESS CLIENT FILE
+                clientDict = AccessClientFile(command[1]);
+
+                // ACCESS SERVER FILE
+                serverDict = AccessServerFile(command[2]);
+
+                // ACCESS SERVER VAULT
+                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+
+                // GET SECRET KEY
+                secretKey = clientDict["secret"];
+
                 // PERFORM OPERATION
                 if (command.Length == 4)
                 {
@@ -293,10 +297,9 @@ namespace Password_Manager
                 } else {
                     Console.WriteLine("Invalid SET command format.");
                 }
-
             // FAILURE
             } catch (Exception e) {
-                Console.WriteLine($"Something went wrong.\n\nException thrown: {e.Message}");
+                Console.WriteLine($"SET command failed.\n\nException thrown: {e.Message}");
             }
         }
         #endregion
@@ -318,23 +321,28 @@ namespace Password_Manager
             //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
-            // ACCESS CLIENT FILE
-            clientDict = AccessClientFile(command[1]);
+            try {
+                // ACCESS CLIENT FILE
+                clientDict = AccessClientFile(command[1]);
 
-            // ACCESS SERVER FILE
-            serverDict = AccessServerFile(command[2]);
+                // ACCESS SERVER FILE
+                serverDict = AccessServerFile(command[2]);
 
-            // ACCESS SERVER VAULT
-            vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+                // ACCESS SERVER VAULT
+                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
 
-            // GET SECRET KEY
-            secretKey = clientDict["secret"];
+                // GET SECRET KEY
+                secretKey = clientDict["secret"];
 
-            // PERFORM OPERATION
-            vaultDict.Remove(command[3]);
+                // PERFORM OPERATION
+                vaultDict.Remove(command[3]);
 
-            // RE-ENCRYPT PASSWORD VAULT
-            WriteServerFile(command[2], vaultDict, masterPwd, secretKey);            
+                // RE-ENCRYPT PASSWORD VAULT
+                WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+            // FAILURE
+            } catch (Exception e) {
+                Console.WriteLine($"DELETE command failed.\n\nException thrown: {e.Message}");
+            }
         }
         #endregion
 
@@ -342,9 +350,14 @@ namespace Password_Manager
         #region secret
         private void cmdSecret(string[] command)
         {
-            // PRINT CLIENT SECRET KEY
-            Dictionary<string, string> clientDict = AccessClientFile(command[1]);
-            Console.WriteLine(clientDict["secret"]);
+            try {
+                // PRINT CLIENT SECRET KEY
+                Dictionary<string, string> clientDict = AccessClientFile(command[1]);
+                Console.WriteLine(clientDict["secret"]);
+            // FAILURE
+            } catch (Exception e) {
+                Console.WriteLine($"SECRET command failed.\n\nException thrown: {e.Message}");
+            }
         }
         #endregion
 
@@ -408,14 +421,9 @@ namespace Password_Manager
             if (!File.Exists(path)) {
                 throw new FileNotFoundException($"Client file not found at path: {path}.");
             }
-                
-            try {
-                string clientString = fileManager.ReadFile(path);
-                return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
-            } catch (Exception e) {
-                Console.WriteLine($"Could not access client file.\n\nException thrown: {e.Message}");
-                return new Dictionary<string,string>();
-            }
+
+            string clientString = fileManager.ReadFile(path);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
         }
         #endregion
 
@@ -428,13 +436,8 @@ namespace Password_Manager
                 throw new FileNotFoundException($"Server file not found at path: {path}.");
             }
 
-            try {
-                string clientString = fileManager.ReadFile(path);
-                return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
-            } catch (Exception e) {
-                Console.WriteLine($"Could not access server file.\n\nException thrown: {e.Message}");
-                return new Dictionary<string,string>();
-            }
+            string clientString = fileManager.ReadFile(path);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(clientString);
         }
         #endregion
 
@@ -530,7 +533,7 @@ namespace Password_Manager
                     }
                 }
             } catch (Exception e){
-                Console.WriteLine($"Encryption failed.\n\nException thrown: {e.Message}");
+                throw new Exception($"Encryption failed.\n\nException thrown: {e.Message}");
             }
 
             // Return the encrypted bytes from the memory stream.
