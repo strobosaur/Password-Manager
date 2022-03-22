@@ -232,7 +232,12 @@ namespace Password_Manager
                 } else if (command.Length == 4) {
 
                     // PRINT CHOSEN PROP PASSWORD
-                    Console.WriteLine(vaultDict[command[3]]);
+                    // Console.WriteLine(vaultDict[command[3]]);
+                    string propPwd;
+                    if (vaultDict.TryGetValue(command[3], out propPwd))
+                        Console.WriteLine(propPwd);
+                    else
+                        System.Console.WriteLine("The specified key doesn't exist in vault.");                    
                 }
             } catch (Exception e){
                 Console.WriteLine($"GET command failed.\n\nException thrown: {e.Message}");

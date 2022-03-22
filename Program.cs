@@ -16,7 +16,7 @@ namespace Password_Manager
             string[] args8 = {"get", "client.json", "server.json", "hotmail.com"};
 
             // bool run = true;
-            PasswordManager manager = new PasswordManager(args5);
+            PasswordManager manager = new PasswordManager(args8);
             manager.HandleInput();
 
             // MAIN LOOP
