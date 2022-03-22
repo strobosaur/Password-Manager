@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.IO;
@@ -96,6 +95,9 @@ namespace Password_Manager
             string emptyVault;
             byte[] skBytes;
 
+            string clientPath = command[1];
+            string serverPath = command[2];
+
             Rfc2898DeriveBytes key1;
 
             Dictionary<string, string> clientDict = new Dictionary<string, string>();
@@ -105,7 +107,6 @@ namespace Password_Manager
             //Console.WriteLine("Running INIT command\n");
 
             // GET USER PASSWORD INPUT
-            //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
             // GENERATE SECRET KEY
@@ -145,10 +146,10 @@ namespace Password_Manager
             serverOutput = JsonSerializer.Serialize(serverDict);
 
             // CREATE CLIENT FILE
-            fileManager.WriteFile(command[1], clientOutput);
+            fileManager.WriteFile(clientPath, clientOutput);
 
             // CREATE SERVER VAULT FILE
-            fileManager.WriteFile(command[2], serverOutput);
+            fileManager.WriteFile(serverPath, serverOutput);
         }
         #endregion
 
@@ -160,6 +161,9 @@ namespace Password_Manager
             string secretKey;
             string clientOutput;
 
+            string clientPath = command[1];
+            string serverPath = command[2];
+
             Dictionary<string, string> clientDict = new Dictionary<string, string>();
             Dictionary<string, string> serverDict = new Dictionary<string, string>();
             Dictionary<string, string> vaultDict = new Dictionary<string, string>();
@@ -170,23 +174,22 @@ namespace Password_Manager
             masterPwd = PasswordPrompt();
 
             // SECRET KEY PROMPT
-            //secretKey = "ke3e3olAxRkxklKBge7H/w==";
             secretKey = PasswordPrompt("Secret Key");
 
             // ATTEMPT DECRYPTION
             try {
                 // ACCESS SERVER FILE
-                serverDict = AccessServerFile(command[2]);
+                serverDict = AccessServerFile(serverPath);
 
                 // ACCESS SERVER VAULT
-                vaultDict = AccessServerVault(command[2], masterPwd, secretKey);
+                vaultDict = AccessServerVault(serverPath, masterPwd, secretKey);
 
                 // CREATE CLIENT OUTPUT OBJECT
                 clientDict.Add("secret", secretKey);
                 clientOutput = JsonSerializer.Serialize(clientDict);
 
                 // CREATE CLIENT FILE
-                fileManager.WriteFile(command[1], clientOutput);
+                fileManager.WriteFile(clientPath, clientOutput);
             }
             // FAILURE
             catch (Exception e) {
@@ -201,6 +204,9 @@ namespace Password_Manager
         {
             string masterPwd;
 
+            string clientPath = command[1];
+            string serverPath = command[2];
+
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
@@ -208,18 +214,17 @@ namespace Password_Manager
             //Console.WriteLine("Running GET command\n");
             
             // MASTER PASSWORD PROMPT
-            //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
             try {
                 // ACCESS CLIENT FILE
-                clientDict = AccessClientFile(command[1]);
+                clientDict = AccessClientFile(clientPath);
 
                 // ACCESS SERVER FILE
-                serverDict = AccessServerFile(command[2]);
+                serverDict = AccessServerFile(serverPath);
 
                 // ACCESS SERVER VAULT
-                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+                vaultDict = AccessServerVault(serverPath, masterPwd, clientDict["secret"]);
 
                 // DETERMINE OPERATION
                 if (command.Length == 3) {
@@ -232,7 +237,6 @@ namespace Password_Manager
                 } else if (command.Length == 4) {
 
                     // PRINT CHOSEN PROP PASSWORD
-                    // Console.WriteLine(vaultDict[command[3]]);
                     string propPwd;
                     if (vaultDict.TryGetValue(command[3], out propPwd))
                         Console.WriteLine(propPwd);
@@ -253,6 +257,10 @@ namespace Password_Manager
             string propPwd;
             string secretKey;
 
+            string clientPath = command[1];
+            string serverPath = command[2];
+            string propName = command[3];
+
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
@@ -260,19 +268,18 @@ namespace Password_Manager
             //Console.WriteLine("Running SET command\n");
 
             // MASTER PASSWORD PROMPT
-            //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
             // ATTEMPT OPERATION
             try {
                 // ACCESS CLIENT FILE
-                clientDict = AccessClientFile(command[1]);
+                clientDict = AccessClientFile(clientPath);
 
                 // ACCESS SERVER FILE
-                serverDict = AccessServerFile(command[2]);
+                serverDict = AccessServerFile(serverPath);
 
                 // ACCESS SERVER VAULT
-                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+                vaultDict = AccessServerVault(serverPath, masterPwd, clientDict["secret"]);
 
                 // GET SECRET KEY
                 secretKey = clientDict["secret"];
@@ -284,10 +291,10 @@ namespace Password_Manager
                     propPwd = PasswordPrompt("Prop Password");
 
                     // STORE IN DICTIONARY
-                    vaultDict[command[3]] = propPwd;
+                    vaultDict[propName] = propPwd;
 
                     // RE-ENCRYPT PASSWORD VAULT
-                    WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+                    WriteServerFile(serverPath, vaultDict, masterPwd, secretKey);
                 } 
                 else if ((command.Length == 5) && ((command[4] == "-g") || (command[4] == "--generate")))
                 {
@@ -295,10 +302,13 @@ namespace Password_Manager
                     propPwd = GeneratePassword();
 
                     // STORE IN DICTIONARY
-                    vaultDict[command[3]] = propPwd;
+                    vaultDict[propName] = propPwd;
 
                     // RE-ENCRYPT PASSWORD VAULT
-                    WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+                    WriteServerFile(serverPath, vaultDict, masterPwd, secretKey);
+
+                    // PRINT GENERATED PASSWORD TO CONSOLE
+                    Console.WriteLine($"Your generated password for \"{propName}\" is:\n\n{propPwd}");
                 } else {
                     Console.WriteLine("Invalid SET command format.");
                 }
@@ -316,6 +326,9 @@ namespace Password_Manager
             string masterPwd;
             string secretKey;
 
+            string clientPath = command[1];
+            string serverPath = command[2];
+
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
             Dictionary<string, string> vaultDict;
@@ -323,18 +336,17 @@ namespace Password_Manager
             //Console.WriteLine("Running DELETE command\n");
 
             // MASTER PASSWORD PROMPT
-            //masterPwd = "12345678";
             masterPwd = PasswordPrompt();
 
             try {
                 // ACCESS CLIENT FILE
-                clientDict = AccessClientFile(command[1]);
+                clientDict = AccessClientFile(clientPath);
 
                 // ACCESS SERVER FILE
-                serverDict = AccessServerFile(command[2]);
+                serverDict = AccessServerFile(serverPath);
 
                 // ACCESS SERVER VAULT
-                vaultDict = AccessServerVault(command[2], masterPwd, clientDict["secret"]);
+                vaultDict = AccessServerVault(serverPath, masterPwd, clientDict["secret"]);
 
                 // GET SECRET KEY
                 secretKey = clientDict["secret"];
@@ -343,7 +355,7 @@ namespace Password_Manager
                 vaultDict.Remove(command[3]);
 
                 // RE-ENCRYPT PASSWORD VAULT
-                WriteServerFile(command[2], vaultDict, masterPwd, secretKey);
+                WriteServerFile(serverPath, vaultDict, masterPwd, secretKey);
             // FAILURE
             } catch (Exception e) {
                 Console.WriteLine($"DELETE command failed.\n\nException thrown: {e.Message}");
@@ -386,7 +398,6 @@ namespace Password_Manager
                 Console.Write(prompt);
 
                 // READ CONSOLE INPUT
-                //masterPwd = "12345678";
                 outString = Console.ReadLine();
 
                 // CHECK PASSWORD LENGTH
