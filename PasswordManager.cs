@@ -400,13 +400,15 @@ namespace Password_Manager
         private string GeneratePassword(int length = 20)
         {
             Random random = new Random();
-            string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            string[] validChars = {"abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "1234567890"};
             string output = "";
+            int j;
 
             // ADD RANDOM VALID CHAR TO OUT STRING
             for(int i = 0; i < length; i++)
             {
-                output += validChars[random.Next(validChars.Length)];
+                j = random.Next(validChars.Length);
+                output += validChars[j][random.Next(validChars[j].Length)];
             }
 
             return output;
