@@ -18,8 +18,8 @@ namespace Password_Manager
                 {
                     File.WriteAllText(path, input);
                 }
-            } catch (Exception e) {
-                throw new Exception($"Write file failed (path: {path})\n\nException thrown: {e.Message}");
+            } catch {
+                throw new Exception($"Write file failed (path: {path})");
             }
         }
         #endregion
@@ -45,7 +45,7 @@ namespace Password_Manager
                     throw new Exception($"File does not exist ({path})");
                 }
             } catch (Exception e) {
-                throw new Exception($"Read file failed.\n\nException thrown: {e.Message}");
+                throw new Exception($"Read file failed. {e.Message}");
             }
 
             return result;

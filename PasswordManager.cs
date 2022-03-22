@@ -52,7 +52,7 @@ namespace Password_Manager
                     break;
 
                     case "set":
-                    if ((input.Length == 4) || (input.Length == 5))
+                    if ((input.Length == 4) || ((input.Length == 5) && ((input[4] == "-g") || (input[4] == "--generate"))))
                         cmdSet(input);
                     else
                         Console.WriteLine("Invalid SET input format.");
@@ -192,8 +192,8 @@ namespace Password_Manager
                 fileManager.WriteFile(clientPath, clientOutput);
             }
             // FAILURE
-            catch (Exception e) {
-                Console.WriteLine($"CREATE command failed.\n\nException thrown: {e.Message}");
+            catch {
+                Console.WriteLine($"CREATE command failed. Invalid Master Password or Secret Key.");
             }            
         }
         #endregion
@@ -241,7 +241,7 @@ namespace Password_Manager
                     if (vaultDict.TryGetValue(command[3], out propPwd))
                         Console.WriteLine(propPwd);
                     else
-                        System.Console.WriteLine("The specified key doesn't exist in vault.");                    
+                        Console.WriteLine($"The key \"{command[3]}\" does not exist in vault.");                    
                 }
             } catch (Exception e){
                 Console.WriteLine($"GET command failed.\n\nException thrown: {e.Message}");
@@ -328,6 +328,7 @@ namespace Password_Manager
 
             string clientPath = command[1];
             string serverPath = command[2];
+            string propName = command[3];
 
             Dictionary<string, string> clientDict;
             Dictionary<string, string> serverDict;
@@ -352,7 +353,10 @@ namespace Password_Manager
                 secretKey = clientDict["secret"];
 
                 // PERFORM OPERATION
-                vaultDict.Remove(command[3]);
+                if (vaultDict.ContainsKey(propName))
+                    vaultDict.Remove(propName);
+                else
+                    Console.WriteLine($"The key \"{propName}\" does not exist in vault.");
 
                 // RE-ENCRYPT PASSWORD VAULT
                 WriteServerFile(serverPath, vaultDict, masterPwd, secretKey);
@@ -600,8 +604,8 @@ namespace Password_Manager
                         }
                     }
                 }
-            } catch (Exception e) {
-                throw new Exception($"Decryption failed.\n\nException thrown: {e.Message}");
+            } catch {
+                throw new Exception($"Decryption failed. Invalid Master Password or Secret Key");
             }
 
             return plaintext;
