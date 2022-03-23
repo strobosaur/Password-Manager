@@ -449,7 +449,7 @@ namespace Password_Manager
         }
         #endregion
 
-        // FUNTION ACCESS SERVER FILE
+        // FUNCTION ACCESS SERVER FILE
         #region access server file
         private Dictionary<string, string> AccessServerFile(string path)
         {
@@ -463,7 +463,7 @@ namespace Password_Manager
         }
         #endregion
 
-        // FUNTION ACCESS SERVER VAULT
+        // FUNCTION ACCESS SERVER VAULT
         #region access server vault
         private Dictionary<string, string> AccessServerVault(string path, string masterPwd, string secretKey)
         {
